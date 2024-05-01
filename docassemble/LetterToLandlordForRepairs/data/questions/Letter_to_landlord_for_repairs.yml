@@ -39,6 +39,7 @@ code: |
 objects:
   - users: ALPeopleList.using(there_are_any=True)
   - other_parties: ALPeopleList.using(there_are_any=True)
+  - repair_problems: DAList.using(there_are_any=True)
 ---
 sections:
   - review_Letter_to_landlord_for_repairs: Review your answers
@@ -54,10 +55,8 @@ code: |
   user_ask_role = "na"
   users.gather()
   set_parts(subtitle=str(users))
-  letter_date
-  single_or_plural_tenants_verbs
   set_progress(16)
-  problem_or_problems_amount
+  repair_problems.gather()
   form_of_first_communication
   remind_or_let_you_know
   set_progress(32)
@@ -110,43 +109,16 @@ subquestion: |
   1. Keep a copy for your records
   
   Most people take about 10 minutes to finish this interview.
----
-id: Today s Date
-question: |
-  Today's Date
-fields:
-  - "Today's date": letter_date
-    datatype: date
----
-id: Amount of Tenants at the Property where the repairs are to be made
-question: |
-  Amount of Tenants at the Property where the repairs are to be made
-fields:
-  - "Is there more than one person living in this address that is sending this to the Landlord?": single_or_plural_tenants_verbs
-    datatype: yesnoradio
-  - "How many tenants currently live at this property that needs repair(s)?": me_or_us
-    datatype: integer
-    min: 0
-  - "Are there multiple tenants in the property where the repairs are needed?": single_or_plural_my_our
-    datatype: yesnoradio
-  - "Are there multiple tenants in the property where the repairs are needed?": single_or_plural_tenants
-    datatype: yesnoradio
-  - "Are there multiple tenants in the property where the repairs are needed?": myself_or_ourselves
-    datatype: yesnoradio
+
 ---
 id: Repairs
 question: |
   Repairs
 subquestion: |
-  Please answer the following questions to list the amount ad nature of repairs
+  Please list out each problem that needs repairs. If there is more than one, pless click on the 'Add another' button on the bottom left.
 fields:
-  - "How many problem(s) are there?": problem_or_problems_amount
-    datatype: integer
-    min: 0
-  - "Please list out each problem that needs repairs.": problems_listed
-    input type: area
-  - "Is there more than one repair to be made?": this_or_these
-    datatype: yesnoradio
+  - Describe the Problem: repair_problems[i]
+list collect: True
 ---
 id: Contact to Landlord
 question: |
@@ -164,12 +136,34 @@ fields:
       - In Person
       - Social Media
       - Other
+      - None
     required: False
   - "Please list the times of the day the Landlord can contact you.": available_times
-  - "What date would you want the Landlord to come in and fix the repair(s)?": reasonable_time_to_fix_problem_date
+  - "What date within reason would you want the Landlord to come in and fix the repair(s)?": reasonable_time_to_fix_problem_date
     datatype: date
-  - "Best contact option to reach you or another tenant at the property?": best_contact_option
-    input type: area
+  - "What is the best form of communication the Landlord can reach out to you?": best_contact_option
+    datatype: checkboxes
+    choices:
+      - Email
+      - Text
+      - Call
+      - Letter
+      - In Person
+      - Social Media
+      - Other
+  - Other: contact_other
+    show if: best_contact_option["Other"]
+validation code: |
+  contact_options_filtered =( [item for item in best_contact_option.true_values() if item != "Other"]) + ([contact_other] if best_contact_option["Other"] else [])
+---
+id: any other opposing parties
+question: |
+  Is there another landlord for the property you're requesting repairs for?
+subquestion: |
+  If so, you'll be asked to fill our their information as well.
+fields:
+  - no label: other_parties.there_is_another
+    datatype: yesnoradio    
 ---
 id: Prior notices to Landlord
 question: |
@@ -179,8 +173,9 @@ subquestion: |
 fields:
   - "Is this the first notice of the repair request to the Landlord?": remind_or_let_you_know
     datatype: yesnoradio
-  - "Please list the first date you tried to contact the Landlord about these repair(s)": first_contact_date
+  - "If applicable, please list the first date you tried to contact the Landlord about these repair(s)": first_contact_date
     datatype: date
+    required: False
 ---
 id: preview Letter_to_landlord_for_repairs
 question: |
@@ -217,10 +212,6 @@ review:
     button: |
       **Date of Signature**:
       ${ signature_date }
-  - Edit: single_or_plural_tenants_verbs
-    button: |
-      **Is there more than one person living in this address that is sending this to the Landlord?**:
-      ${ single_or_plural_tenants_verbs }
   - Edit: form_of_first_communication
     button: |
       **If you or anyone living at the property has reached out to the Landlord about the repairs, please type in how you communicated with them**:
@@ -236,46 +227,14 @@ review:
       % for item in other_parties:
         * ${ item }
       % endfor
-  - Edit: me_or_us
-    button: |
-      **How many tenants currently live at this property that needs repair(s)?**:
-      ${ me_or_us }
-  - Edit: letter_date
-    button: |
-      **Today's date**:
-      ${ letter_date }
   - Edit: reasonable_time_to_fix_problem_date
     button: |
       **What date would you want the Landlord to come in and fix the repair(s)?**:
       ${ reasonable_time_to_fix_problem_date }
-  - Edit: problem_or_problems_amount
-    button: |
-      **How many problem(s) are there?**:
-      ${ problem_or_problems_amount }
-  - Edit: problems_listed
-    button: |
-      **Please list out each problem that needs repairs.**:
-      > ${ single_paragraph(problems_listed) }
-  - Edit: this_or_these
-    button: |
-      **Is there more than one repair to be made?**:
-      ${ this_or_these }
   - Edit: remind_or_let_you_know
     button: |
       **Is this the first notice of the repair request to the Landlord?**:
       ${ remind_or_let_you_know }
-  - Edit: single_or_plural_my_our
-    button: |
-      **Are there multiple tenants in the property where the repairs are needed?**:
-      ${ single_or_plural_my_our }
-  - Edit: single_or_plural_tenants
-    button: |
-      **Are there multiple tenants in the property where the repairs are needed?**:
-      ${ single_or_plural_tenants }
-  - Edit: myself_or_ourselves
-    button: |
-      **Are there multiple tenants in the property where the repairs are needed?**:
-      ${ myself_or_ourselves }
   - Edit: best_contact_option
     button: |
       **Best contact option to reach you or another tenant at the property?**:
@@ -381,7 +340,7 @@ attachment:
   filename: Letter_to_landlord_for_repairs
   variable name: Letter_to_landlord_for_repairs_attachment[i]
   skip undefined: True
-  docx template file: Letter_to_landlord_for_repairs.docx
+  docx template file: Letter_to_LL_labeled-Quinetn_meeting_April_19.docx
   tagged pdf: True
 
 
